@@ -33,7 +33,9 @@ from .screenshots import extract_screenshots
               help="Force re-transcription even if a cached transcript exists.")
 @click.option("--screenshots", is_flag=True, default=False,
               help="Extract screenshots from the video and embed them in the summary.")
-def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool, screenshots: bool) -> None:
+@click.option("--screenshot-interval", default=60, show_default=True,
+              help="Seconds between screenshots (used with --screenshots).")
+def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool, screenshots: bool, screenshot_interval: int) -> None:
     """Transcribe a local VIDEO file and write a Markdown summary."""
     output_dir = output_dir or video.parent
 
@@ -99,7 +101,7 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
             screenshot_paths = None
             if screenshots:
                 click.echo("📸  Extracting screenshots…")
-                screenshot_paths = extract_screenshots(video, output_dir)
+                screenshot_paths = extract_screenshots(video, output_dir, interval=screenshot_interval)
                 click.echo(f"    {len(screenshot_paths)} screenshots saved → {output_dir / (video.stem + '_screenshots')}/")
 
             md_file = write_markdown(
