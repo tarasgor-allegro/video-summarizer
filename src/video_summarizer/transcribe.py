@@ -53,17 +53,26 @@ def _transcribe_openai_api(audio_path: Path, api_model: str, api_key: str | None
         )
 
     client = openai.OpenAI(api_key=key)
+
+    # verbose_json is only supported by whisper-1
+    response_format = "verbose_json" if api_model == "whisper-1" else "json"
+
     with open(audio_path, "rb") as f:
         response = client.audio.transcriptions.create(
             model=api_model,
             file=f,
-            response_format="verbose_json",
+            response_format=response_format,
         )
 
-    return {
-        "text": response.text.strip(),
-        "language": getattr(response, "language", "unknown") or "unknown",
-    }
+    if response_format == "verbose_json":
+        text = response.text.strip()
+        language = getattr(response, "language", "unknown") or "unknown"
+    else:
+        # json format returns a plain object with just .text
+        text = (response.text if hasattr(response, "text") else str(response)).strip()
+        language = "unknown"
+
+    return {"text": text, "language": language}
 
 
 def transcribe(
