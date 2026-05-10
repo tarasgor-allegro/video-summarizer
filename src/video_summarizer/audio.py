@@ -12,10 +12,13 @@ SUPPORTED_EXTENSIONS = {
 
 def check_ffmpeg() -> None:
     """Raise RuntimeError if ffmpeg is not installed."""
-    result = subprocess.run(
-        ["ffmpeg", "-version"], capture_output=True
-    )
-    if result.returncode != 0:
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-version"], capture_output=True
+        )
+        if result.returncode != 0:
+            raise RuntimeError("ffmpeg exited with an error.")
+    except FileNotFoundError:
         raise RuntimeError(
             "ffmpeg not found. Install it with:\n"
             "  macOS:  brew install ffmpeg\n"
@@ -40,17 +43,22 @@ def extract_audio(video_path: Path, tmp_dir: str) -> Path:
     validate_video(video_path)
 
     audio_path = Path(tmp_dir) / f"{video_path.stem}.wav"
-    subprocess.run(
-        [
-            "ffmpeg", "-y",
-            "-i", str(video_path),
-            "-vn",                  # no video
-            "-acodec", "pcm_s16le", # WAV
-            "-ar", "16000",         # 16 kHz — optimal for Whisper
-            "-ac", "1",             # mono
-            str(audio_path),
-        ],
-        capture_output=True,
-        check=True,
-    )
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-i", str(video_path),
+                "-vn",                  # no video
+                "-acodec", "pcm_s16le", # WAV
+                "-ar", "16000",         # 16 kHz — optimal for Whisper
+                "-ac", "1",             # mono
+                str(audio_path),
+            ],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"ffmpeg failed to extract audio:\n{e.stderr.decode(errors='replace')}"
+        )
     return audio_path
