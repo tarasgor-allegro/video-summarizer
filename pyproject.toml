@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-summarizer"
+version = "0.1.0"
+description = "Transcribe a local video file and generate a human-readable Markdown summary"
+requires-python = ">=3.10"
+dependencies = [
+    "openai-whisper",
+    "litellm",
+    "click",
+    "ffmpeg-python",
+]
+
+[project.scripts]
+summarize = "video_summarizer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
