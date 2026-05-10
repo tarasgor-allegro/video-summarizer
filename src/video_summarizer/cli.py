@@ -52,6 +52,7 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
                 whisper_model=whisper_model,
                 transcriber=transcriber,
                 no_cache=no_cache,
+                api_key=api_key,
             )
 
             click.echo(f"🌐  Language detected: {result['language']}")

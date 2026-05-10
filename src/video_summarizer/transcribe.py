@@ -41,17 +41,18 @@ def _transcribe_local(audio_path: Path, whisper_model: str) -> dict:
     }
 
 
-def _transcribe_openai_api(audio_path: Path, api_model: str) -> dict:
+def _transcribe_openai_api(audio_path: Path, api_model: str, api_key: str | None = None) -> dict:
     import openai
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
+    key = api_key or os.environ.get("OPENAI_API_KEY")
+    if not key:
         raise RuntimeError(
-            "OPENAI_API_KEY environment variable is not set.\n"
-            "Export it with: export OPENAI_API_KEY=sk-..."
+            "OPENAI_API_KEY is not set.\n"
+            "Run `summarize` without --model to set it up interactively, "
+            "or export it with: export OPENAI_API_KEY=sk-..."
         )
 
-    client = openai.OpenAI(api_key=api_key)
+    client = openai.OpenAI(api_key=key)
     with open(audio_path, "rb") as f:
         response = client.audio.transcriptions.create(
             model=api_model,
@@ -71,6 +72,7 @@ def transcribe(
     whisper_model: str = "base",
     transcriber: str = "local",
     no_cache: bool = False,
+    api_key: str | None = None,
 ) -> dict:
     """
     Transcribe audio and return a dict with keys:
@@ -80,6 +82,7 @@ def transcribe(
     Args:
         transcriber: 'local', 'whisper-1', or 'gpt-realtime-whisper'
         whisper_model: only used when transcriber='local'
+        api_key: OpenAI API key (falls back to OPENAI_API_KEY env var)
     """
     cache = _cache_path(video_path)
 
@@ -90,7 +93,7 @@ def transcribe(
     if transcriber == "local":
         payload = _transcribe_local(audio_path, whisper_model)
     elif transcriber in OPENAI_API_MODELS:
-        payload = _transcribe_openai_api(audio_path, transcriber)
+        payload = _transcribe_openai_api(audio_path, transcriber, api_key=api_key)
     else:
         raise ValueError(
             f"Unknown transcriber '{transcriber}'. "
