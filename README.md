@@ -29,6 +29,37 @@ source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
+## First run — interactive setup
+
+The first time you run `summarize`, it walks you through picking an LLM provider and entering your API key:
+
+```
+⚙️  Let's set up your LLM provider.
+
+  1) OpenAI (gpt-4o)
+  2) Anthropic (claude-3-5-sonnet)
+  3) Ollama — local, free, no API key needed (ollama/llama3)
+
+Pick a provider [1]: 1
+
+Enter your OPENAI_API_KEY: ****
+🔐  API key stored in system keychain.
+✅  Config saved to ~/.config/video-summarizer/config.json
+```
+
+Your API key is stored in the **system keychain** (macOS Keychain, Windows Credential Manager, Linux Secret Service) — never written to disk as plain text.
+
+## Subsequent runs
+
+On every run after setup, you're asked whether to reuse your saved provider:
+
+```
+💾  Saved provider: OpenAI (gpt-4o)
+    Use this provider? [Y/n]:
+```
+
+Press **Enter** to continue, or **n** to switch to a different provider.
+
 ## Usage
 
 ```bash
@@ -38,20 +69,22 @@ summarize <video_file> [OPTIONS]
 ### Examples
 
 ```bash
-# Basic — uses gpt-4o, saves .md next to the video
+# Basic — interactive provider prompt, saves .md next to the video
 summarize meeting.mp4
 
-# Specify model and output directory
-summarize lecture.mkv --model gpt-4o --output ./notes/
+# Save output to a specific directory
+summarize meeting.mp4 --output ./notes/
 
-# Use Claude and a larger Whisper model for better accuracy
-summarize interview.mov --model claude-3-5-sonnet --whisper-model medium
-
-# Use OpenAI cloud transcription (faster startup, no local GPU needed)
-summarize meeting.mp4 --transcriber whisper-1
+# Use a cloud transcriber for faster startup (no local model download)
 summarize meeting.mp4 --transcriber gpt-realtime-whisper
 
-# Force re-transcription (ignore cached transcript)
+# Use a larger local Whisper model for better accuracy
+summarize lecture.mkv --whisper-model medium
+
+# Skip the provider prompt (useful for scripting)
+summarize meeting.mp4 --model gpt-4o
+
+# Force re-transcription, ignoring cached transcript
 summarize meeting.mp4 --no-cache
 ```
 
@@ -59,11 +92,11 @@ summarize meeting.mp4 --no-cache
 
 | Flag | Default | Description |
 |---|---|---|
-| `--model` | `gpt-4o` | LiteLLM-compatible model string (see below) |
+| `--model` | _(interactive)_ | LiteLLM model string — bypasses provider prompt entirely |
 | `--output` | Same dir as video | Directory where the `.md` file is saved |
 | `--transcriber` | `local` | Transcription backend: `local`, `whisper-1`, `gpt-realtime-whisper` |
 | `--whisper-model` | `base` | Local Whisper model size (ignored for cloud transcribers) |
-| `--no-cache` | off | Force re-transcription even if a cache exists |
+| `--no-cache` | off | Force re-transcription even if a cached transcript exists |
 
 ## Transcription Backends
 
@@ -73,21 +106,21 @@ summarize meeting.mp4 --no-cache
 | `whisper-1` | OpenAI API | $0.006/min | Fast startup, low-spec machines |
 | `gpt-realtime-whisper` | OpenAI API | $0.017/min | Highest cloud accuracy |
 
-Cloud transcribers require `OPENAI_API_KEY`. The `--whisper-model` flag is ignored when using a cloud transcriber.
+Cloud transcribers use your saved `OPENAI_API_KEY`. The `--whisper-model` flag is ignored when using a cloud transcriber.
 
-## LLM Models
+## LLM Providers
 
-Set the relevant API key as an environment variable, then pass the model name via `--model`.
-
-| Provider | Env var | Example `--model` value |
+| Provider | API key needed | Models |
 |---|---|---|
-| OpenAI | `OPENAI_API_KEY` | `gpt-4o`, `gpt-4-turbo` |
-| Anthropic | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet`, `claude-3-opus` |
-| Ollama (local) | _(none)_ | `ollama/llama3` |
+| OpenAI | Yes | `gpt-4o`, `gpt-4-turbo`, … |
+| Anthropic | Yes | `claude-3-5-sonnet`, `claude-3-opus`, … |
+| Ollama | No (runs locally) | `ollama/llama3`, `ollama/mistral`, … |
+
+When using `--model` directly (scripting mode), set the API key as an environment variable:
 
 ```bash
 export OPENAI_API_KEY=sk-...
-summarize video.mp4 --model gpt-4o
+summarize meeting.mp4 --model gpt-4o
 ```
 
 ## Output
@@ -134,3 +167,4 @@ Transcripts are cached alongside the video as `.<filename>.transcript.json`. On 
 | `large` | slowest | best | ~10 GB |
 
 `base` is the default and works well for most content.
+
