@@ -1,5 +1,7 @@
 """LLM summarization via LiteLLM."""
 
+import os
+
 from litellm import completion
 
 
@@ -35,13 +37,16 @@ Please summarize the following video transcript:
 """
 
 
-def summarize(transcript: str, model: str = "gpt-4o") -> str:
+def summarize(transcript: str, model: str = "gpt-4o", api_key: str | None = None) -> str:
     """Send transcript to LLM and return the markdown summary block."""
-    response = completion(
+    kwargs = dict(
         model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": USER_PROMPT_TEMPLATE.format(transcript=transcript)},
         ],
     )
+    if api_key:
+        kwargs["api_key"] = api_key
+    response = completion(**kwargs)
     return response.choices[0].message.content.strip()

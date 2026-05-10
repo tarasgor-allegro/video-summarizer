@@ -10,12 +10,13 @@ from .audio import extract_audio
 from .transcribe import transcribe
 from .summarize import summarize
 from .writer import write_markdown
+from .config import resolve as resolve_config
 
 
 @click.command()
 @click.argument("video", type=click.Path(exists=True, path_type=Path))
-@click.option("--model", default="gpt-4o", show_default=True,
-              help="LiteLLM-compatible model string for summarization.")
+@click.option("--model", default=None,
+              help="LiteLLM model string (skips interactive provider setup).")
 @click.option("--output", "output_dir", default=None, type=click.Path(path_type=Path),
               help="Output directory for the .md file. Defaults to the video's directory.")
 @click.option("--transcriber", default="local", show_default=True,
@@ -25,11 +26,16 @@ from .writer import write_markdown
               help="Local Whisper model size: tiny, base, small, medium, large. Ignored for cloud transcribers.")
 @click.option("--no-cache", is_flag=True, default=False,
               help="Force re-transcription even if a cached transcript exists.")
-def main(video: Path, model: str, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool) -> None:
+def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool) -> None:
     """Transcribe a local VIDEO file and write a Markdown summary."""
     output_dir = output_dir or video.parent
 
-    click.echo(f"📹  Video:       {video}")
+    # Interactive provider/key setup (skipped if --model is passed explicitly)
+    cfg = resolve_config(model)
+    model = cfg["model"]
+    api_key = cfg.get("api_key")
+
+    click.echo(f"\n📹  Video:       {video}")
     click.echo(f"🎙️  Transcriber: {transcriber}" + (f" ({whisper_model})" if transcriber == "local" else ""))
     click.echo(f"🤖  Model:       {model}")
     click.echo(f"📂  Output:      {output_dir}")
@@ -50,7 +56,7 @@ def main(video: Path, model: str, output_dir: Path, transcriber: str, whisper_mo
 
             click.echo(f"🌐  Language detected: {result['language']}")
             click.echo("💬  Summarizing…")
-            summary_md = summarize(result["text"], model=model)
+            summary_md = summarize(result["text"], model=model, api_key=api_key)
 
             click.echo("📄  Writing Markdown…")
             md_file = write_markdown(
