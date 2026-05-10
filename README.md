@@ -168,3 +168,12 @@ Transcripts are cached alongside the video as `.<filename>.transcript.json`. On 
 
 `base` is the default and works well for most content.
 
+## A note on ffmpeg licensing
+
+ffmpeg is licensed under **LGPL 2.1+** (standard installs via brew/apt). This app calls `ffmpeg` as an external command-line tool — it does not link or bundle ffmpeg's libraries.
+
+**This means you can use this app freely**, including for personal and commercial work tasks. The LGPL/GPL restrictions only apply if you were to distribute a binary with ffmpeg bundled inside, or modify ffmpeg's source code.
+
+The transcript and summary are your own data — ffmpeg's license places no restrictions on what you do with the output.
+
+
