@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"}
-OPENAI_API_MODELS = {"whisper-1", "gpt-realtime-whisper"}
+OPENAI_API_MODELS = {"whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"}
 
 
 def _cache_path(video_path: Path) -> Path:

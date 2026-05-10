@@ -76,7 +76,7 @@ summarize meeting.mp4
 summarize meeting.mp4 --output ./notes/
 
 # Use a cloud transcriber for faster startup (no local model download)
-summarize meeting.mp4 --transcriber gpt-realtime-whisper
+summarize meeting.mp4 --transcriber gpt-4o-transcribe
 
 # Use a larger local Whisper model for better accuracy
 summarize lecture.mkv --whisper-model medium
@@ -94,7 +94,7 @@ summarize meeting.mp4 --no-cache
 |---|---|---|
 | `--model` | _(interactive)_ | LiteLLM model string — bypasses provider prompt entirely |
 | `--output` | Same dir as video | Directory where the `.md` file is saved |
-| `--transcriber` | `local` | Transcription backend: `local`, `whisper-1`, `gpt-realtime-whisper` |
+| `--transcriber` | `local` | Transcription backend: `local`, `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe` |
 | `--whisper-model` | `base` | Local Whisper model size (ignored for cloud transcribers) |
 | `--no-cache` | off | Force re-transcription even if a cached transcript exists |
 
@@ -104,9 +104,12 @@ summarize meeting.mp4 --no-cache
 |---|---|---|---|
 | `local` (default) | On your machine | Free | Privacy, no internet, large files |
 | `whisper-1` | OpenAI API | $0.006/min | Fast startup, low-spec machines |
-| `gpt-realtime-whisper` | OpenAI API | $0.017/min | Highest cloud accuracy |
+| `gpt-4o-transcribe` | OpenAI API | $0.006/min | Higher accuracy than whisper-1 |
+| `gpt-4o-mini-transcribe` | OpenAI API | $0.003/min | Fast and cheap cloud option |
 
 Cloud transcribers use your saved `OPENAI_API_KEY`. The `--whisper-model` flag is ignored when using a cloud transcriber.
+
+> **Note:** `gpt-realtime-whisper` is a WebSocket streaming model for live audio — it does not support batch file transcription and is not available here.
 
 ## LLM Providers
 

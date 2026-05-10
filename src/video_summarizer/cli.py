@@ -20,7 +20,7 @@ from .config import resolve as resolve_config
 @click.option("--output", "output_dir", default=None, type=click.Path(path_type=Path),
               help="Output directory for the .md file. Defaults to the video's directory.")
 @click.option("--transcriber", default="local", show_default=True,
-              type=click.Choice(["local", "whisper-1", "gpt-realtime-whisper"], case_sensitive=False),
+              type=click.Choice(["local", "whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"], case_sensitive=False),
               help="Transcription backend to use.")
 @click.option("--whisper-model", default="base", show_default=True,
               help="Local Whisper model size: tiny, base, small, medium, large. Ignored for cloud transcribers.")
