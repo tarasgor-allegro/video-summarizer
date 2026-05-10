@@ -75,5 +75,15 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
         click.echo(f"\n❌  Error: {exc}", err=True)
         sys.exit(1)
     except Exception as exc:
-        click.echo(f"\n❌  Unexpected error: {exc}", err=True)
+        # Surface 401 / auth errors clearly
+        msg = str(exc)
+        if "401" in msg or "invalid_api_key" in msg or "Incorrect API key" in msg:
+            click.echo(
+                "\n❌  Invalid API key. Run the command again and answer 'n' "
+                "to re-enter your key.\n"
+                "    Get a valid key at: https://platform.openai.com/api-keys",
+                err=True,
+            )
+        else:
+            click.echo(f"\n❌  Unexpected error: {exc}", err=True)
         sys.exit(1)
