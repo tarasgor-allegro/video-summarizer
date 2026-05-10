@@ -78,24 +78,33 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
             )
             click.echo(f"🌐  Language detected: {result['language']}")
 
-            # --- Summarization cost estimate ---
-            est_tokens, est_llm_cost = llm_estimate(result["text"], model)
-            click.echo(
-                f"\n💰  Summarization estimate: ~{est_tokens:,} input tokens "
-                f"→ {format_cost(est_llm_cost)} ({model})"
-            )
-            if not click.confirm("    Proceed?", default=True):
-                click.echo("Aborted.")
-                sys.exit(0)
-            click.echo("")
+            # --- Summarization cost estimate (skip if cached) ---
+            from .summarize import _is_cache_valid as _summary_cache_valid
+            summary_cached = not no_cache and _summary_cache_valid(video, model)
+            if not summary_cached:
+                est_tokens, est_llm_cost = llm_estimate(result["text"], model)
+                click.echo(
+                    f"\n💰  Summarization estimate: ~{est_tokens:,} input tokens "
+                    f"→ {format_cost(est_llm_cost)} ({model})"
+                )
+                if not click.confirm("    Proceed?", default=True):
+                    click.echo("Aborted.")
+                    sys.exit(0)
+                click.echo("")
 
             click.echo("💬  Summarizing…")
-            summary_md, usage = summarize(result["text"], model=model, api_key=api_key)
-            click.echo(
-                f"📊  Tokens used: {usage['prompt_tokens']:,} in / "
-                f"{usage['completion_tokens']:,} out  "
-                f"({format_cost(usage['cost_usd'])})"
+            summary_md, usage = summarize(
+                result["text"], model=model, api_key=api_key,
+                video_path=video, no_cache=no_cache,
             )
+            if usage.get("cached"):
+                click.echo("📊  Summary loaded from cache (free)")
+            else:
+                click.echo(
+                    f"📊  Tokens used: {usage['prompt_tokens']:,} in / "
+                    f"{usage['completion_tokens']:,} out  "
+                    f"({format_cost(usage['cost_usd'])})"
+                )
 
             click.echo("📄  Writing Markdown…")
             screenshot_paths = None
