@@ -15,6 +15,7 @@ from .costs import (
     transcription_estimate, llm_estimate, format_cost, get_audio_duration,
     TRANSCRIPTION_COST_PER_MIN,
 )
+from .screenshots import extract_screenshots
 
 
 @click.command()
@@ -30,7 +31,9 @@ from .costs import (
               help="Local Whisper model size: tiny, base, small, medium, large. Ignored for cloud transcribers.")
 @click.option("--no-cache", is_flag=True, default=False,
               help="Force re-transcription even if a cached transcript exists.")
-def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool) -> None:
+@click.option("--screenshots", is_flag=True, default=False,
+              help="Extract screenshots from the video and embed them in the summary.")
+def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool, screenshots: bool) -> None:
     """Transcribe a local VIDEO file and write a Markdown summary."""
     output_dir = output_dir or video.parent
 
@@ -93,6 +96,12 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
             )
 
             click.echo("📄  Writing Markdown…")
+            screenshot_paths = None
+            if screenshots:
+                click.echo("📸  Extracting screenshots…")
+                screenshot_paths = extract_screenshots(video, output_dir)
+                click.echo(f"    {len(screenshot_paths)} screenshots saved → {output_dir / (video.stem + '_screenshots')}/")
+
             md_file = write_markdown(
                 video_path=video,
                 output_path=output_dir,
@@ -100,6 +109,7 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
                 transcript=result["text"],
                 language=result["language"],
                 model=model,
+                screenshot_paths=screenshot_paths,
             )
 
         click.echo(f"\n✅  Done! → {md_file}")

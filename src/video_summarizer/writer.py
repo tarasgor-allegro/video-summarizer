@@ -36,10 +36,26 @@ def write_markdown(
     transcript: str,
     language: str,
     model: str,
+    screenshot_paths: list[Path] | None = None,
 ) -> Path:
     """Write the final .md file and return its path."""
     duration = format_duration(video_path)
     today = date.today().isoformat()
+
+    screenshots_section = ""
+    if screenshot_paths:
+        lines = ["## Screenshots\n"]
+        for p in screenshot_paths:
+            # Use path relative to the markdown file so images work portably
+            try:
+                rel = p.relative_to(output_path)
+            except ValueError:
+                rel = p
+            ts_sec = int(p.stem.split("_")[-1].rstrip("s"))
+            h, m, s = ts_sec // 3600, (ts_sec % 3600) // 60, ts_sec % 60
+            label = f"{h:02d}:{m:02d}:{s:02d}"
+            lines.append(f"![{label}]({rel})\n")
+        screenshots_section = "\n" + "\n".join(lines) + "\n---\n"
 
     content = f"""# Summary: {video_path.name}
 
@@ -53,7 +69,7 @@ def write_markdown(
 {summary_md}
 
 ---
-
+{screenshots_section}
 ## Full Transcript
 
 {transcript}
