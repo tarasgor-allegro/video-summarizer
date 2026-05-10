@@ -11,6 +11,10 @@ from .transcribe import transcribe
 from .summarize import summarize
 from .writer import write_markdown
 from .config import resolve as resolve_config
+from .costs import (
+    transcription_estimate, llm_estimate, format_cost, get_audio_duration,
+    TRANSCRIPTION_COST_PER_MIN,
+)
 
 
 @click.command()
@@ -46,6 +50,19 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
             click.echo("🔊  Extracting audio…")
             audio = extract_audio(video, tmp)
 
+            # --- Transcription cost estimate ---
+            if transcriber != "local":
+                duration_s = get_audio_duration(audio)
+                duration_min, est_cost = transcription_estimate(duration_s, transcriber)
+                click.echo(
+                    f"\n💰  Transcription estimate: {duration_min:.1f} min audio "
+                    f"→ {format_cost(est_cost)} ({transcriber})"
+                )
+                if not click.confirm("    Proceed?", default=True):
+                    click.echo("Aborted.")
+                    sys.exit(0)
+                click.echo("")
+
             click.echo("📝  Transcribing…")
             result = transcribe(
                 audio, video,
@@ -54,10 +71,26 @@ def main(video: Path, model: str | None, output_dir: Path, transcriber: str, whi
                 no_cache=no_cache,
                 api_key=api_key,
             )
-
             click.echo(f"🌐  Language detected: {result['language']}")
+
+            # --- Summarization cost estimate ---
+            est_tokens, est_llm_cost = llm_estimate(result["text"], model)
+            click.echo(
+                f"\n💰  Summarization estimate: ~{est_tokens:,} input tokens "
+                f"→ {format_cost(est_llm_cost)} ({model})"
+            )
+            if not click.confirm("    Proceed?", default=True):
+                click.echo("Aborted.")
+                sys.exit(0)
+            click.echo("")
+
             click.echo("💬  Summarizing…")
-            summary_md = summarize(result["text"], model=model, api_key=api_key)
+            summary_md, usage = summarize(result["text"], model=model, api_key=api_key)
+            click.echo(
+                f"📊  Tokens used: {usage['prompt_tokens']:,} in / "
+                f"{usage['completion_tokens']:,} out  "
+                f"({format_cost(usage['cost_usd'])})"
+            )
 
             click.echo("📄  Writing Markdown…")
             md_file = write_markdown(

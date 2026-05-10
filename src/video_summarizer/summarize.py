@@ -37,8 +37,13 @@ Please summarize the following video transcript:
 """
 
 
-def summarize(transcript: str, model: str = "gpt-4o", api_key: str | None = None) -> str:
-    """Send transcript to LLM and return the markdown summary block."""
+def summarize(transcript: str, model: str = "gpt-4o", api_key: str | None = None) -> tuple[str, dict]:
+    """Send transcript to LLM and return (markdown_summary, usage_dict).
+
+    usage_dict keys: prompt_tokens, completion_tokens, total_tokens, cost_usd
+    """
+    import litellm
+
     kwargs = dict(
         model=model,
         messages=[
@@ -49,4 +54,17 @@ def summarize(transcript: str, model: str = "gpt-4o", api_key: str | None = None
     if api_key:
         kwargs["api_key"] = api_key
     response = completion(**kwargs)
-    return response.choices[0].message.content.strip()
+
+    usage = response.usage or {}
+    try:
+        cost_usd = litellm.completion_cost(completion_response=response)
+    except Exception:
+        cost_usd = 0.0
+
+    usage_dict = {
+        "prompt_tokens": getattr(usage, "prompt_tokens", 0),
+        "completion_tokens": getattr(usage, "completion_tokens", 0),
+        "total_tokens": getattr(usage, "total_tokens", 0),
+        "cost_usd": cost_usd,
+    }
+    return response.choices[0].message.content.strip(), usage_dict
