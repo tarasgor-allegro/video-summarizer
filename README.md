@@ -47,6 +47,10 @@ summarize lecture.mkv --model gpt-4o --output ./notes/
 # Use Claude and a larger Whisper model for better accuracy
 summarize interview.mov --model claude-3-5-sonnet --whisper-model medium
 
+# Use OpenAI cloud transcription (faster startup, no local GPU needed)
+summarize meeting.mp4 --transcriber whisper-1
+summarize meeting.mp4 --transcriber gpt-realtime-whisper
+
 # Force re-transcription (ignore cached transcript)
 summarize meeting.mp4 --no-cache
 ```
@@ -57,8 +61,19 @@ summarize meeting.mp4 --no-cache
 |---|---|---|
 | `--model` | `gpt-4o` | LiteLLM-compatible model string (see below) |
 | `--output` | Same dir as video | Directory where the `.md` file is saved |
-| `--whisper-model` | `base` | Whisper model size: `tiny`, `base`, `small`, `medium`, `large` |
+| `--transcriber` | `local` | Transcription backend: `local`, `whisper-1`, `gpt-realtime-whisper` |
+| `--whisper-model` | `base` | Local Whisper model size (ignored for cloud transcribers) |
 | `--no-cache` | off | Force re-transcription even if a cache exists |
+
+## Transcription Backends
+
+| `--transcriber` | Runs | Cost | Best for |
+|---|---|---|---|
+| `local` (default) | On your machine | Free | Privacy, no internet, large files |
+| `whisper-1` | OpenAI API | $0.006/min | Fast startup, low-spec machines |
+| `gpt-realtime-whisper` | OpenAI API | $0.017/min | Highest cloud accuracy |
+
+Cloud transcribers require `OPENAI_API_KEY`. The `--whisper-model` flag is ignored when using a cloud transcriber.
 
 ## LLM Models
 

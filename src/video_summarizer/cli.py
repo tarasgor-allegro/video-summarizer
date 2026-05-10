@@ -18,18 +18,21 @@ from .writer import write_markdown
               help="LiteLLM-compatible model string for summarization.")
 @click.option("--output", "output_dir", default=None, type=click.Path(path_type=Path),
               help="Output directory for the .md file. Defaults to the video's directory.")
+@click.option("--transcriber", default="local", show_default=True,
+              type=click.Choice(["local", "whisper-1", "gpt-realtime-whisper"], case_sensitive=False),
+              help="Transcription backend to use.")
 @click.option("--whisper-model", default="base", show_default=True,
-              help="Whisper model size: tiny, base, small, medium, large.")
+              help="Local Whisper model size: tiny, base, small, medium, large. Ignored for cloud transcribers.")
 @click.option("--no-cache", is_flag=True, default=False,
               help="Force re-transcription even if a cached transcript exists.")
-def main(video: Path, model: str, output_dir: Path, whisper_model: str, no_cache: bool) -> None:
+def main(video: Path, model: str, output_dir: Path, transcriber: str, whisper_model: str, no_cache: bool) -> None:
     """Transcribe a local VIDEO file and write a Markdown summary."""
     output_dir = output_dir or video.parent
 
-    click.echo(f"📹  Video:     {video}")
-    click.echo(f"🤖  Model:     {model}")
-    click.echo(f"🎙️  Whisper:   {whisper_model}")
-    click.echo(f"📂  Output:    {output_dir}")
+    click.echo(f"📹  Video:       {video}")
+    click.echo(f"🎙️  Transcriber: {transcriber}" + (f" ({whisper_model})" if transcriber == "local" else ""))
+    click.echo(f"🤖  Model:       {model}")
+    click.echo(f"📂  Output:      {output_dir}")
     click.echo("")
 
     try:
@@ -38,7 +41,12 @@ def main(video: Path, model: str, output_dir: Path, whisper_model: str, no_cache
             audio = extract_audio(video, tmp)
 
             click.echo("📝  Transcribing…")
-            result = transcribe(audio, video, whisper_model=whisper_model, no_cache=no_cache)
+            result = transcribe(
+                audio, video,
+                whisper_model=whisper_model,
+                transcriber=transcriber,
+                no_cache=no_cache,
+            )
 
             click.echo(f"🌐  Language detected: {result['language']}")
             click.echo("💬  Summarizing…")

@@ -9,6 +9,7 @@ description = "Transcribe a local video file and generate a human-readable Markd
 requires-python = ">=3.10"
 dependencies = [
     "openai-whisper",
+    "openai",
     "litellm",
     "click",
     "ffmpeg-python",
